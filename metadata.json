@@ -1,0 +1,6 @@
+{
+  "name": "CrossPost Pro - Video & Tweet to Facebook Hub & Extension",
+  "description": "Capture videos & captions from X/Twitter, Instagram, TikTok, and Tumblr, then effortlessly cross-post to your personal Facebook profile or managed Facebook Pages with 1-click video downloader and ready-to-install Chrome Extension.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
