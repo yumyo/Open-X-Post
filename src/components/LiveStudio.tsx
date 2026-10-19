@@ -45,6 +45,12 @@ const MANAGED_PAGES: ManagedPage[] = [
 
 const PRESETS = [
   {
+    label: 'X/Twitter: Basem Alhabel',
+    platform: 'twitter' as const,
+    id: 'twitter-basem',
+    url: 'https://x.com/BAlhabel/status/2111813304561569946',
+  },
+  {
     label: 'X/Twitter: Humanoid Robot',
     platform: 'twitter' as const,
     id: 'twitter-tech',
@@ -67,12 +73,6 @@ const PRESETS = [
     platform: 'tumblr' as const,
     id: 'tumblr-aesthetic',
     url: 'https://midnight-cine-archive.tumblr.com/post/748291049281',
-  },
-  {
-    label: 'X/Twitter: Aurora Time-Lapse',
-    platform: 'twitter' as const,
-    id: 'twitter-space',
-    url: 'https://x.com/AstroOdyssey/status/1823901234567890123',
   },
 ];
 
@@ -177,13 +177,14 @@ export const LiveStudio: React.FC<LiveStudioProps> = ({ onAddLog, onGoToAdvisor 
   }, []);
 
   const handleExtract = async (targetUrl: string) => {
+    if (!targetUrl || !targetUrl.trim()) return;
     setIsExtracting(true);
     setFeedbackBanner(null);
     try {
       const res = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify({ url: targetUrl.trim() }),
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -191,9 +192,21 @@ export const LiveStudio: React.FC<LiveStudioProps> = ({ onAddLog, onGoToAdvisor 
         setCaption(data.data.text);
         setOriginalExtractedCaption(data.data.text);
         setAiSuggestions(null);
+        setFeedbackBanner({
+          type: 'success',
+          message: data.message || `✓ Video & text successfully extracted from ${data.data.author.name} (${data.data.author.handle})!`,
+        });
+      } else {
+        setFeedbackBanner({
+          type: 'info',
+          message: data.error || 'Could not find a video at that URL. Please verify the post contains a video.',
+        });
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setFeedbackBanner({
+        type: 'info',
+        message: 'Extraction error: ' + (err.message || 'Network request failed'),
+      });
     } finally {
       setIsExtracting(false);
     }
@@ -392,6 +405,26 @@ export const LiveStudio: React.FC<LiveStudioProps> = ({ onAddLog, onGoToAdvisor 
             </button>
           ))}
         </div>
+
+        {/* Live Extraction Status & Feedback Banner */}
+        {isExtracting && (
+          <div className="mt-4 p-3 bg-blue-950/60 border border-blue-800/60 rounded-lg text-xs text-blue-200 flex items-center gap-2 animate-pulse">
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+            <span>Fetching video stream and caption from post URL...</span>
+          </div>
+        )}
+        {!isExtracting && feedbackBanner && (
+          <div
+            className={`mt-4 p-3 rounded-lg text-xs flex items-start gap-2 border ${
+              feedbackBanner.type === 'success'
+                ? 'bg-emerald-950/50 border-emerald-800/70 text-emerald-200'
+                : 'bg-amber-950/50 border-amber-800/70 text-amber-200'
+            }`}
+          >
+            <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span>{feedbackBanner.message}</span>
+          </div>
+        )}
       </div>
 
       {/* Main Studio Viewport (2-Column Grid) */}
@@ -426,9 +459,11 @@ export const LiveStudio: React.FC<LiveStudioProps> = ({ onAddLog, onGoToAdvisor 
               {/* HTML5 Video Player */}
               <div className="relative bg-black aspect-video flex items-center justify-center">
                 <video
+                  key={extractedMedia.videoUrl}
                   src={extractedMedia.videoUrl}
                   controls
                   playsInline
+                  autoPlay
                   className="w-full h-full object-contain"
                   poster={extractedMedia.thumbnail}
                 >
